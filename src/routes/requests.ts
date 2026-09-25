@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { addRequest, listRequests } from "../requests.store";
+import { addRequest, approveRequest, listRequests, rejectRequest } from "../requests.store";
 import { REQUEST_STATUSES, type RequestStatus } from "../types";
 
 interface CreateRequestBody {
@@ -13,6 +13,14 @@ interface ListRequestsQuery {
   status?: string;
   page?: string;
   limit?: string;
+}
+
+interface RequestIdParams {
+  id: string;
+}
+
+interface RejectRequestBody {
+  reason?: string;
 }
 
 const DEFAULT_LIMIT = 10;
@@ -98,4 +106,41 @@ export default async function requestsRoutes(app: FastifyInstance) {
 
     return reply.send({ items, total, page, limit });
   });
+
+  app.patch<{ Params: RequestIdParams }>("/requests/:id/approve", async (request, reply) => {
+    const result = approveRequest(request.params.id);
+
+    if (result.type === "not_found") {
+      return reply.status(404).send({ error: "request not found" });
+    }
+
+    if (result.type === "not_pending") {
+      return reply.status(409).send({ error: "only pending requests can be approved" });
+    }
+
+    return reply.send(result.request);
+  });
+
+  app.patch<{ Params: RequestIdParams; Body: RejectRequestBody }>(
+    "/requests/:id/reject",
+    async (request, reply) => {
+      const reason = request.body?.reason;
+
+      if (!reason?.trim()) {
+        return reply.status(400).send({ error: "reason is required" });
+      }
+
+      const result = rejectRequest(request.params.id, reason.trim());
+
+      if (result.type === "not_found") {
+        return reply.status(404).send({ error: "request not found" });
+      }
+
+      if (result.type === "not_pending") {
+        return reply.status(409).send({ error: "only pending requests can be rejected" });
+      }
+
+      return reply.send(result.request);
+    }
+  );
 }

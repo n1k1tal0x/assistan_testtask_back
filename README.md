@@ -14,17 +14,23 @@
 - `docker-compose.yml` — сервис `app` (порт `3000` наружу) и сервис `db` (`postgres:16-alpine`).
   БД не публикует порт наружу и не смотрит во внешнюю сеть — доступна только сервису `app`
   внутри внутренней docker-сети `internal`.
-- Тип заявки `VacationRequest` (`src/types.ts`): `id`, `fullName`, `dateFrom`, `dateTo`, `reason`.
+- Тип заявки `VacationRequest` (`src/types.ts`): `id`, `fullName`, `dateFrom`, `dateTo`, `reason`,
+  `status`, `rejectionReason`.
 - Хранилище заявок в памяти процесса (`src/requests.store.ts`).
 - `POST /requests` (`src/routes/requests.ts`) — создание заявки. Валидация: `fullName` и `reason`
   не могут быть пустыми, `dateFrom`/`dateTo` обязательны и должны быть корректными датами,
   `dateTo` не может быть раньше `dateFrom`. При ошибке — `400` с описанием, при успехе — `201`
-  и созданная заявка с сгенерированным `id` и статусом `pending`.
+  и созданная заявка с сгенерированным `id` и статусом `pending`. Количество дней отпуска
+  (`days`) бэкенд не отдаёт — оно считается на фронтенде по `dateFrom`/`dateTo`.
 - `GET /requests` (`src/routes/requests.ts`) — список заявок с опциональным фильтром `?status=`
   (`pending`/`approved`/`rejected`) и пагинацией `?page=`/`?limit=` (по умолчанию `page=1`,
   `limit=10`, максимум `100`). Требует заголовок `x-list-password` со значением из `LIST_PASSWORD`
   (переменная окружения, читается из `.env` через `dotenv`; см. `.env.example`) — без заголовка
   или с неверным значением возвращает `401`.
+- `PATCH /requests/:id/approve` и `PATCH /requests/:id/reject` — решение по заявке. Разрешено
+  только для заявок в статусе `pending` (иначе `409`), несуществующий `id` — `404`. `reject`
+  требует непустой `reason` в теле запроса (`400`, если его нет) — причина сохраняется в
+  `rejectionReason` и видна в `GET /requests`.
 
 - Code-first схема БД на Drizzle ORM (`src/db/schema.ts`) — таблица `vacation_requests` и
   таблица `request_statuses` (FK на `vacation_requests.id`, enum-статус, по умолчанию `pending`)
@@ -35,8 +41,8 @@
 - `src/db/client.ts` — Drizzle-клиент для подключения к PostgreSQL.
 
 Хранилище заявок в рантайме (`src/requests.store.ts`) пока не переключено на БД — оно по-прежнему
-в памяти процесса, статус там хранится прямо на объекте заявки. Одобрение/отклонение заявки
-пока не реализованы.
+в памяти процесса, статус и причина отказа там хранятся прямо на объекте заявки (в БД это
+отдельная таблица `request_statuses` — на данный момент рантайм и схема БД не синхронизированы).
 
 ## Подход к БД: code-first
 

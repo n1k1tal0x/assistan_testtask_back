@@ -9,4 +9,5 @@ export interface VacationRequest {
   dateTo: string;
   reason: string;
   status: RequestStatus;
+  rejectionReason: string | null;
 }
