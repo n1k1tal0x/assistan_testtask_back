@@ -17,6 +17,13 @@ interface ListRequestsQuery {
 
 const DEFAULT_LIMIT = 10;
 const MAX_LIMIT = 100;
+const LIST_PASSWORD_HEADER = "x-list-password";
+
+const LIST_PASSWORD = process.env.LIST_PASSWORD;
+
+if (!LIST_PASSWORD) {
+  throw new Error("LIST_PASSWORD is not set");
+}
 
 function isRequestStatus(value: string): value is RequestStatus {
   return (REQUEST_STATUSES as readonly string[]).includes(value);
@@ -60,6 +67,10 @@ export default async function requestsRoutes(app: FastifyInstance) {
   });
 
   app.get<{ Querystring: ListRequestsQuery }>("/requests", async (request, reply) => {
+    if (request.headers[LIST_PASSWORD_HEADER] !== LIST_PASSWORD) {
+      return reply.status(401).send({ error: "invalid or missing password" });
+    }
+
     const { status, page: pageRaw, limit: limitRaw } = request.query;
 
     if (status !== undefined && !isRequestStatus(status)) {

@@ -19,17 +19,24 @@
 - `POST /requests` (`src/routes/requests.ts`) — создание заявки. Валидация: `fullName` и `reason`
   не могут быть пустыми, `dateFrom`/`dateTo` обязательны и должны быть корректными датами,
   `dateTo` не может быть раньше `dateFrom`. При ошибке — `400` с описанием, при успехе — `201`
-  и созданная заявка с сгенерированным `id`.
+  и созданная заявка с сгенерированным `id` и статусом `pending`.
+- `GET /requests` (`src/routes/requests.ts`) — список заявок с опциональным фильтром `?status=`
+  (`pending`/`approved`/`rejected`) и пагинацией `?page=`/`?limit=` (по умолчанию `page=1`,
+  `limit=10`, максимум `100`). Требует заголовок `x-list-password` со значением из `LIST_PASSWORD`
+  (переменная окружения, читается из `.env` через `dotenv`; см. `.env.example`) — без заголовка
+  или с неверным значением возвращает `401`.
 
-- Code-first схема БД на Drizzle ORM (`src/db/schema.ts`) — таблица `vacation_requests` описана
-  в TypeScript и является источником истины.
-- `drizzle.config.ts` + `npm run db:generate` — генерация SQL-миграции из схемы
-  (первая миграция уже сгенерирована в `drizzle/`).
+- Code-first схема БД на Drizzle ORM (`src/db/schema.ts`) — таблица `vacation_requests` и
+  таблица `request_statuses` (FK на `vacation_requests.id`, enum-статус, по умолчанию `pending`)
+  описаны в TypeScript и являются источником истины.
+- `drizzle.config.ts` + `npm run db:generate` — генерация SQL-миграций из схемы
+  (миграции уже сгенерированы в `drizzle/`).
 - `npm run db:migrate` (`src/db/migrate.ts`) — применение миграций к БД, заданной через `DATABASE_URL`.
 - `src/db/client.ts` — Drizzle-клиент для подключения к PostgreSQL.
 
 Хранилище заявок в рантайме (`src/requests.store.ts`) пока не переключено на БД — оно по-прежнему
-в памяти процесса. Список/фильтрация заявок и одобрение/отклонение пока не реализованы.
+в памяти процесса, статус там хранится прямо на объекте заявки. Одобрение/отклонение заявки
+пока не реализованы.
 
 ## Подход к БД: code-first
 
