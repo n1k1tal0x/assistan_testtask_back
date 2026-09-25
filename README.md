@@ -11,9 +11,13 @@
 
 - Скелет Fastify-приложения на TypeScript (`src/index.ts`), один health-check роут `GET /` → `{ status: "ok" }`.
 - `Dockerfile` — multi-stage сборка (build со `tsc`, затем лёгкий прод-образ только с `dist/`).
-- `docker-compose.yml` — сервис `app` (порт `3000` наружу) и сервис `db` (`postgres:16-alpine`).
-  БД не публикует порт наружу и не смотрит во внешнюю сеть — доступна только сервису `app`
-  внутри внутренней docker-сети `internal`.
+- `docker-compose.yml` — сервисы `app` (порт `3000` наружу), `db` (`postgres:16-alpine`) и
+  `frontend` (порт `5173` наружу). БД не публикует порт наружу и не смотрит во внешнюю сеть —
+  доступна только сервису `app` внутри внутренней docker-сети `internal`.
+- `frontend.Dockerfile` + `frontend-entrypoint.sh` — сервис `frontend` при старте клонирует
+  frontend-репозиторий (`FRONTEND_REPO_URL`, по умолчанию `assistan_testtask_front`), ставит
+  зависимости и поднимает `vite dev` на `0.0.0.0:5173`. Переменные окружения (в т.ч.
+  `VITE_API_BASE_URL`) берёт из того же `.env`, что и `app` (`env_file`).
 - Тип заявки `VacationRequest` (`src/types.ts`): `id`, `fullName`, `dateFrom`, `dateTo`, `reason`,
   `status`, `rejectionReason`.
 - Хранилище заявок в памяти процесса (`src/requests.store.ts`).
