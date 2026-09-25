@@ -1,0 +1,33 @@
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      HOST: 0.0.0.0
+      DATABASE_URL: postgres://app:app@db:5432/vacations
+    depends_on:
+      - db
+    networks:
+      - internal
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: vacations
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - internal
+    # Никаких "ports" наружу — база доступна только внутри сети "internal",
+    # то есть только сервису app. Снаружи (с хоста/из внешней сети) недоступна.
+
+networks:
+  internal:
+
+volumes:
+  db_data:
