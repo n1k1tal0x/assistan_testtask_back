@@ -1,7 +1,28 @@
 import { randomUUID } from "node:crypto";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname } from "node:path";
 import type { VacationRequest } from "./types";
 
-const requests: VacationRequest[] = [];
+const DATA_FILE = process.env.DATA_FILE ?? "./data/requests.json";
+
+function loadRequests(): VacationRequest[] {
+  if (!existsSync(DATA_FILE)) {
+    return [];
+  }
+
+  try {
+    return JSON.parse(readFileSync(DATA_FILE, "utf-8")) as VacationRequest[];
+  } catch {
+    return [];
+  }
+}
+
+function persist(): void {
+  mkdirSync(dirname(DATA_FILE), { recursive: true });
+  writeFileSync(DATA_FILE, JSON.stringify(requests, null, 2));
+}
+
+const requests: VacationRequest[] = loadRequests();
 
 export function addRequest(
   data: Omit<VacationRequest, "id" | "status" | "rejectionReason">
@@ -13,6 +34,7 @@ export function addRequest(
     ...data,
   };
   requests.push(request);
+  persist();
   return request;
 }
 
@@ -23,6 +45,7 @@ export function listRequests(): VacationRequest[] {
 /** Только для тестов: очищает хранилище, чтобы тесты не влияли друг на друга. */
 export function resetRequestsStore(): void {
   requests.length = 0;
+  persist();
 }
 
 export type UpdateStatusResult =
@@ -42,6 +65,7 @@ export function approveRequest(id: string): UpdateStatusResult {
   }
 
   request.status = "approved";
+  persist();
   return { type: "ok", request };
 }
 
@@ -58,5 +82,6 @@ export function rejectRequest(id: string, rejectionReason: string): UpdateStatus
 
   request.status = "rejected";
   request.rejectionReason = rejectionReason;
+  persist();
   return { type: "ok", request };
 }

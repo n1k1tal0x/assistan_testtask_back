@@ -20,7 +20,10 @@
   `VITE_API_BASE_URL`) берёт из того же `.env`, что и `app` (`env_file`).
 - Тип заявки `VacationRequest` (`src/types.ts`): `id`, `fullName`, `dateFrom`, `dateTo`, `reason`,
   `status`, `rejectionReason`.
-- Хранилище заявок в памяти процесса (`src/requests.store.ts`).
+- Хранилище заявок (`src/requests.store.ts`) — JSON-файл на диске (по умолчанию `./data/requests.json`,
+  путь настраивается через `DATA_FILE`), а не только память процесса: при старте файл читается,
+  после каждого изменения — перезаписывается целиком. Так заявки переживают перезапуск/пересоздание
+  контейнера, а не только рестарт процесса. В `docker-compose.yml` под это выделен volume `app_data`.
 - `POST /requests` (`src/routes/requests.ts`) — создание заявки. Валидация: `fullName` и `reason`
   не могут быть пустыми, `reason` — не короче 20 символов, `dateFrom`/`dateTo` обязательны,
   должны быть корректными датами, `dateFrom` не может быть раньше сегодняшнего дня, `dateTo`
