@@ -20,6 +20,11 @@ export function listRequests(): VacationRequest[] {
   return requests;
 }
 
+/** Только для тестов: очищает хранилище, чтобы тесты не влияли друг на друга. */
+export function resetRequestsStore(): void {
+  requests.length = 0;
+}
+
 export type UpdateStatusResult =
   | { type: "not_found" }
   | { type: "not_pending" }

@@ -1,20 +1,7 @@
 import "dotenv/config";
-import Fastify from "fastify";
-import cors from "@fastify/cors";
-import requestsRoutes from "./routes/requests";
+import { buildApp } from "./app";
 
-const app = Fastify({ logger: true });
-
-app.register(cors, {
-  origin: (process.env.CORS_ORIGIN ?? "http://localhost:5173").split(","),
-  methods: ["GET", "POST", "PATCH"],
-});
-
-app.get("/", async () => {
-  return { status: "ok" };
-});
-
-app.register(requestsRoutes);
+const app = buildApp();
 
 const start = async () => {
   try {

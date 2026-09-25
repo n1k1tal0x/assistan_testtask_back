@@ -25,6 +25,7 @@ interface RejectRequestBody {
 
 const DEFAULT_LIMIT = 10;
 const MAX_LIMIT = 100;
+const MIN_REASON_LENGTH = 20;
 const LIST_PASSWORD_HEADER = "x-list-password";
 
 const LIST_PASSWORD = process.env.LIST_PASSWORD;
@@ -56,12 +57,25 @@ export default async function requestsRoutes(app: FastifyInstance) {
       return reply.status(400).send({ error: "dateFrom and dateTo must be valid dates" });
     }
 
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+
+    if (from < today) {
+      return reply.status(400).send({ error: "dateFrom cannot be before today" });
+    }
+
     if (to < from) {
       return reply.status(400).send({ error: "dateTo cannot be before dateFrom" });
     }
 
     if (!reason?.trim()) {
       return reply.status(400).send({ error: "reason is required" });
+    }
+
+    if (reason.trim().length < MIN_REASON_LENGTH) {
+      return reply
+        .status(400)
+        .send({ error: `reason must be at least ${MIN_REASON_LENGTH} characters long` });
     }
 
     const created = addRequest({
